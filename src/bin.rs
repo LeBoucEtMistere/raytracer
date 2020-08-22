@@ -93,7 +93,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .build();
 
     // Render
-    let number_samples = 150usize;
+    let number_samples = 100usize;
     let max_depth = 50usize;
 
     let results = thread::scope(|s| -> Vec<Canvas> {
