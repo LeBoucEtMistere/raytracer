@@ -1,7 +1,7 @@
 use super::export::{PPMWriter, RGBPixel};
 use itertools::Itertools;
 use nalgebra_glm::Vec3;
-use ndarray::{arr1, s, Array3};
+use ndarray::{s, Array3};
 use std::ops::{Add, AddAssign};
 
 #[derive(Debug)]
@@ -27,9 +27,10 @@ impl Canvas {
         if self.layers == 0 {
             self.layers = 1;
         }
-        self.data
-            .slice_mut(s![j, i, ..])
-            .assign(&arr1(&[color.x, color.y, color.z]));
+        let mut slice = self.data.slice_mut(s![j, i, ..]);
+        slice[0] = color.x;
+        slice[1] = color.y;
+        slice[2] = color.z;
     }
 
     pub fn gamma_correction(&mut self) {
