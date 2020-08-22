@@ -3,7 +3,9 @@ use raytracing_lib::material::*;
 use raytracing_lib::object::*;
 use raytracing_lib::*;
 
+use crossbeam_channel::unbounded;
 use crossbeam_utils::thread;
+use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra_glm::Vec3;
 use rand::prelude::*;
 use std::{error::Error, path::PathBuf, sync::Arc};
@@ -53,7 +55,7 @@ fn render(
 fn main() -> Result<(), Box<dyn Error>> {
     // Image
     let aspect_ratio = 16.0f32 / 9.0f32;
-    let image_width = 820usize;
+    let image_width = 1080usize;
     let image_height = (image_width as f32 / aspect_ratio) as usize;
     let mut cv = Canvas::new_initialized(image_height, image_width);
 
@@ -93,22 +95,42 @@ fn main() -> Result<(), Box<dyn Error>> {
         .build();
 
     // Render
-    let number_samples = 100usize;
+    let number_samples = 200usize;
     let max_depth = 50usize;
+
+    // Progress tracking
+    let (tx, rx) = unbounded::<()>();
+    let progress_thread_handle = std::thread::spawn(move || {
+        println!("Starting render ...");
+        let pb = ProgressBar::new(number_samples as u64);
+        pb.set_style(ProgressStyle::default_bar()
+        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} pass(es) ({eta})")
+        .progress_chars("#>-"));
+        pb.set_position(0);
+        let mut done = 0usize;
+        for _msg in rx.iter() {
+            done += 1;
+            pb.set_position(done as u64);
+        }
+        pb.finish();
+    });
 
     let results = thread::scope(|s| -> Vec<Canvas> {
         let mut results = Vec::new();
         for _ in 0..number_samples {
             let camera_arc = Arc::clone(&camera);
             let hittables_arc = world.get_hittables();
+            let tx_clone = tx.clone();
             results.push(s.spawn(move |_| {
-                render(
+                let result = render(
                     image_height,
                     image_width,
                     camera_arc,
                     hittables_arc,
                     max_depth,
-                )
+                );
+                tx_clone.send(()).unwrap();
+                result
             }));
         }
         results.into_iter().map(|x| x.join().unwrap()).collect()
@@ -119,6 +141,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     cv.normalize();
     cv.gamma_correction();
+
+    drop(tx); // close channel by dropping last alive Sender
+    progress_thread_handle.join().unwrap();
 
     // Saving image
     let p = PathBuf::from("laifilfse.ppm");
