@@ -71,7 +71,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Materials
     let mut material_atlas = MaterialAtlas::new();
     material_atlas.insert_material("DiffuseGreen", Diffuse::new(Vec3::new(0.1, 0.6, 0.0)));
-    material_atlas.insert_material("MetalYellow", Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.0));
+    material_atlas.insert_material("MetalYellow", Metal::new(Vec3::new(0.8, 0.6, 0.2), 0.3));
 
     // Objects
     let world = World::builder()
@@ -93,10 +93,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         .build();
 
     // Render
-    let number_samples = 100usize;
+    let number_samples = 150usize;
     let max_depth = 50usize;
 
-    match thread::scope(|s| -> Vec<Canvas> {
+    let results = thread::scope(|s| -> Vec<Canvas> {
         let mut results = Vec::new();
         for _ in 0..number_samples {
             let camera_arc = Arc::clone(&camera);
@@ -112,12 +112,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             }));
         }
         results.into_iter().map(|x| x.join().unwrap()).collect()
-    }) {
-        Ok(results) => {
-            cv = results.into_iter().fold(cv, |acc, b| acc + b);
-        }
-        Err(_e) => eprintln!("Error in end of scoping"),
-    }
+    })
+    .map_err(|err| format!("{:?}", err))?;
+
+    cv = results.into_iter().fold(cv, |acc, b| acc + b);
 
     cv.normalize();
     cv.gamma_correction();
