@@ -3,16 +3,18 @@ mod canvas;
 mod collision;
 mod export;
 mod material;
+mod material_atlas;
 mod objects;
 mod ray;
 mod utils;
+mod world;
 
 use camera::Camera;
 use canvas::Canvas;
 use collision::HittableList;
 use crossbeam_utils::thread;
 use export::PPMWriter;
-use material::{Diffuse, Material, Metal};
+use material::{Diffuse, Metal};
 use nalgebra_glm::Vec3;
 use objects::Sphere;
 use rand::prelude::*;
@@ -79,41 +81,47 @@ fn main() -> Result<(), Box<dyn Error>> {
         viewport_height,
     ));
 
-    let number_samples = 100usize;
-    let max_depth = 50usize;
+    // Materials
+    let mut material_atlas = material_atlas::MaterialAtlas::new();
+    material_atlas.insert_material("DiffuseGreen", Diffuse::new(Vec3::new(0.1, 0.6, 0.0)));
+    material_atlas.insert_material("MetalYellow", Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.0));
 
     // Objects
-    let mut world = HittableList::new();
-    let mat_default = Arc::new(Box::new(Diffuse::default()) as Box<dyn Material>);
-    let mat_diff = Arc::new(Box::new(Diffuse::new(Vec3::new(0.1, 0.6, 0.0))) as Box<dyn Material>);
-    let mat_metal =
-        Arc::new(Box::new(Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.0)) as Box<dyn Material>);
-    let obj1 = Arc::new(Sphere::new(
-        Vec3::new(-0.7, 0.0, -1.0),
-        0.5,
-        Arc::clone(&mat_diff),
-    ));
-    world.add_hittable(obj1);
-    world.add_hittable(Arc::new(Sphere::new(
-        Vec3::new(0.7, 0.0, -1.0),
-        0.5,
-        Arc::clone(&mat_metal),
-    )));
-    world.add_hittable(Arc::new(Sphere::new(
-        Vec3::new(0.0, -100.5, -1.0),
-        100.0,
-        Arc::clone(&mat_default),
-    )));
+    let world = world::World::builder()
+        .add_object(Sphere::new(
+            Vec3::new(-0.7, 0.0, -1.0),
+            0.5,
+            material_atlas.get_material("DiffuseGreen").unwrap(),
+        ))
+        .add_object(Sphere::new(
+            Vec3::new(0.7, 0.0, -1.0),
+            0.5,
+            material_atlas.get_material("MetalYellow").unwrap(),
+        ))
+        .add_object(Sphere::new(
+            Vec3::new(0.0, -100.5, -1.0),
+            100.0,
+            material_atlas.get_material("Default").unwrap(),
+        ))
+        .build();
 
-    let world = Arc::new(world);
+    // Render
+    let number_samples = 100usize;
+    let max_depth = 50usize;
 
     match thread::scope(|s| -> Vec<Canvas> {
         let mut results = Vec::new();
         for _ in 0..number_samples {
             let camera_arc = Arc::clone(&camera);
-            let world_arc = Arc::clone(&world);
+            let hittables_arc = world.get_hittables();
             results.push(s.spawn(move |_| {
-                render(image_height, image_width, camera_arc, world_arc, max_depth)
+                render(
+                    image_height,
+                    image_width,
+                    camera_arc,
+                    hittables_arc,
+                    max_depth,
+                )
             }));
         }
         results.into_iter().map(|x| x.join().unwrap()).collect()
