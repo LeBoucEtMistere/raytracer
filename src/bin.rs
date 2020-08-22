@@ -1,24 +1,11 @@
-mod camera;
-mod canvas;
-mod collision;
-mod export;
-mod material;
-mod material_atlas;
-mod objects;
-mod ray;
-mod utils;
-mod world;
+use raytracing_lib::export::PPMWriter;
+use raytracing_lib::material::*;
+use raytracing_lib::object::*;
+use raytracing_lib::*;
 
-use camera::Camera;
-use canvas::Canvas;
-use collision::HittableList;
 use crossbeam_utils::thread;
-use export::PPMWriter;
-use material::{Diffuse, Metal};
 use nalgebra_glm::Vec3;
-use objects::Sphere;
 use rand::prelude::*;
-use ray::Ray;
 use std::{error::Error, path::PathBuf, sync::Arc};
 
 fn ray_color(world: &Arc<HittableList>, r: &Ray, depth: usize) -> Vec3 {
@@ -82,12 +69,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     ));
 
     // Materials
-    let mut material_atlas = material_atlas::MaterialAtlas::new();
+    let mut material_atlas = MaterialAtlas::new();
     material_atlas.insert_material("DiffuseGreen", Diffuse::new(Vec3::new(0.1, 0.6, 0.0)));
     material_atlas.insert_material("MetalYellow", Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.0));
 
     // Objects
-    let world = world::World::builder()
+    let world = World::builder()
         .add_object(Sphere::new(
             Vec3::new(-0.7, 0.0, -1.0),
             0.5,
