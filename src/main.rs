@@ -12,16 +12,12 @@ use canvas::Canvas;
 use collision::HittableList;
 use crossbeam_utils::thread;
 use export::PPMWriter;
-use material::{Diffuse, Metal};
+use material::{Diffuse, Material, Metal};
 use nalgebra_glm::Vec3;
 use objects::Sphere;
 use rand::prelude::*;
 use ray::Ray;
-use std::{
-    error::Error,
-    path::PathBuf,
-    sync::{Arc, Mutex},
-};
+use std::{error::Error, path::PathBuf, sync::Arc};
 
 fn ray_color(world: &Arc<HittableList>, r: &Ray, depth: usize) -> Vec3 {
     if depth <= 0 {
@@ -29,11 +25,10 @@ fn ray_color(world: &Arc<HittableList>, r: &Ray, depth: usize) -> Vec3 {
     }
 
     if let Some(record) = world.hit(r, 0.001f32, f32::INFINITY) {
-        let material_lock_guard = record.material_hit.lock().unwrap();
-        if let Some(scattered) = material_lock_guard.scatter(r, &record) {
+        if let Some(scattered) = record.material_hit.scatter(r, &record) {
             // a ray is scattered by the material
-            let albedo = material_lock_guard.albedo();
-            drop(material_lock_guard);
+            let albedo = record.material_hit.albedo();
+
             return albedo.component_mul(&ray_color(world, &scattered, depth - 1));
         }
         // no scattered ray, return black
@@ -89,24 +84,26 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Objects
     let mut world = HittableList::new();
-    let mat_diff = Arc::new(Mutex::new(Diffuse::new(Vec3::new(0.1, 0.6, 0.0))));
-    let mat_metal = Arc::new(Mutex::new(Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.0)));
-    let obj1 = Arc::new(Mutex::new(Sphere::new(
+    let mat_default = Arc::new(Box::new(Diffuse::default()) as Box<dyn Material>);
+    let mat_diff = Arc::new(Box::new(Diffuse::new(Vec3::new(0.1, 0.6, 0.0))) as Box<dyn Material>);
+    let mat_metal =
+        Arc::new(Box::new(Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.0)) as Box<dyn Material>);
+    let obj1 = Arc::new(Sphere::new(
         Vec3::new(-0.7, 0.0, -1.0),
         0.5,
-        Some(mat_diff),
-    )));
+        Arc::clone(&mat_diff),
+    ));
     world.add_hittable(obj1);
-    world.add_hittable(Arc::new(Mutex::new(Sphere::new(
+    world.add_hittable(Arc::new(Sphere::new(
         Vec3::new(0.7, 0.0, -1.0),
         0.5,
-        Some(mat_metal),
-    ))));
-    world.add_hittable(Arc::new(Mutex::new(Sphere::new(
+        Arc::clone(&mat_metal),
+    )));
+    world.add_hittable(Arc::new(Sphere::new(
         Vec3::new(0.0, -100.5, -1.0),
         100.0,
-        None,
-    ))));
+        Arc::clone(&mat_default),
+    )));
 
     let world = Arc::new(world);
 

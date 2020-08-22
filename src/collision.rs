@@ -1,14 +1,14 @@
 use crate::material::Material;
 use crate::ray::Ray;
 use nalgebra_glm::{dot, Vec3};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub struct HitRecord {
     pub point: Vec3,
     pub normal: Vec3,
     pub t: f32,
     pub front_face: bool,
-    pub material_hit: Arc<Mutex<dyn Material>>,
+    pub material_hit: Arc<Box<dyn Material>>,
 }
 
 impl HitRecord {
@@ -16,7 +16,7 @@ impl HitRecord {
         r: &Ray,
         t: f32,
         outward_normal: &Vec3,
-        material_hit: Arc<Mutex<dyn Material>>,
+        material_hit: Arc<Box<dyn Material>>,
     ) -> Self {
         let front_face = dot(&r.direction, outward_normal) < 0f32;
         let normal = if front_face {
@@ -33,13 +33,13 @@ impl HitRecord {
         }
     }
 }
-pub trait Hittable {
+pub trait Hittable: Send + Sync {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
 }
 
 #[derive(Default)]
 pub struct HittableList {
-    hittables: Vec<Arc<Mutex<dyn Hittable + Send>>>,
+    hittables: Vec<Arc<dyn Hittable>>,
 }
 
 impl HittableList {
@@ -49,7 +49,7 @@ impl HittableList {
         }
     }
 
-    pub fn add_hittable(&mut self, hittable: Arc<Mutex<dyn Hittable + Send>>) {
+    pub fn add_hittable(&mut self, hittable: Arc<dyn Hittable>) {
         self.hittables.push(hittable);
     }
 
@@ -64,7 +64,7 @@ impl HittableList {
         let mut closest_so_far = t_max;
 
         for object in &self.hittables {
-            if let Some(record) = object.lock().unwrap().hit(ray, t_min, closest_so_far) {
+            if let Some(record) = object.hit(ray, t_min, closest_so_far) {
                 closest_so_far = record.t;
                 closest_hit_record = Some(record);
             }

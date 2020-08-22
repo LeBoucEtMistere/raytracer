@@ -1,24 +1,21 @@
 use crate::collision::{HitRecord, Hittable};
-use crate::{material::Diffuse, material::Material, ray::Ray};
+use crate::{material::Material, ray::Ray};
 use nalgebra_glm::{dot, length2, Vec3};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub struct Sphere {
     center: Vec3,
     radius: f32,
 
-    material: Arc<Mutex<dyn Material>>,
+    material: Arc<Box<dyn Material>>,
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f32, material: Option<Arc<Mutex<dyn Material>>>) -> Self {
+    pub fn new(center: Vec3, radius: f32, material: Arc<Box<dyn Material>>) -> Self {
         Sphere {
             center,
             radius,
-            material: match material {
-                Some(mat) => mat,
-                None => Arc::new(Mutex::new(Diffuse::default())),
-            },
+            material,
         }
     }
 }
