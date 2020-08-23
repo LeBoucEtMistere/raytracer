@@ -1,3 +1,4 @@
+use super::Position;
 use crate::collision::{HitRecord, Hittable};
 use crate::{material::Material, ray::Ray};
 use nalgebra_glm::{dot, length2, Vec3};
@@ -56,5 +57,11 @@ impl Hittable for Sphere {
             }
         }
         None
+    }
+}
+
+impl Position for Sphere {
+    fn position(&self) -> &Vec3 {
+        &self.center
     }
 }
