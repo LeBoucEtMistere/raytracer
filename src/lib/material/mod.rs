@@ -12,5 +12,5 @@ pub trait Material: Send + Sync {
     // returns None if no ray is scattered
     fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<Ray>;
     // returns the albedo or attenuation of the surface
-    fn albedo(&self) -> Vec3;
+    fn albedo(&self) -> &Vec3;
 }

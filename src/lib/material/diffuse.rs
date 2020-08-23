@@ -24,8 +24,8 @@ impl Material for Diffuse {
         ))
     }
     // returns the albedo or attenuation of the surface
-    fn albedo(&self) -> Vec3 {
-        self.albedo
+    fn albedo(&self) -> &Vec3 {
+        &self.albedo
     }
 }
 
