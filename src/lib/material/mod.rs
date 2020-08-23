@@ -2,9 +2,11 @@ use crate::collision::HitRecord;
 use crate::ray::Ray;
 use nalgebra_glm::Vec3;
 
+mod dielectric;
 mod diffuse;
 mod metal;
 
+pub use dielectric::Dielectric;
 pub use diffuse::Diffuse;
 pub use metal::Metal;
 

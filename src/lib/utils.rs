@@ -20,3 +20,9 @@ pub fn random_unit_vector() -> Vec3 {
     let r = f32::sqrt(1.0 - z * z);
     return Vec3::new(r * f32::cos(a), r * f32::sin(a), z);
 }
+
+pub fn schlick(cosine: f32, refraction_index: f32) -> f32 {
+    let r0 = (1.0 - refraction_index) / (1.0 + refraction_index);
+    let r0 = r0 * r0;
+    r0 + (1.0 - r0) * f32::powi(1.0 - cosine, 5)
+}
