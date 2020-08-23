@@ -19,6 +19,6 @@ nalgebra-glm = "0.7"
 rand = "0.7.3"
 ndarray = { version= "0.13.1", features= ["rayon"]}
 itertools = "0.9.0"
-crossbeam-utils = "0.7"
 indicatif = "0.15.0"
 crossbeam-channel = "0.4.3"
+threadpool = "1.8.1"

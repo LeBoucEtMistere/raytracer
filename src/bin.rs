@@ -4,11 +4,11 @@ use raytracing_lib::object::*;
 use raytracing_lib::*;
 
 use crossbeam_channel::unbounded;
-use crossbeam_utils::thread;
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra_glm::Vec3;
 use rand::prelude::*;
 use std::{error::Error, path::PathBuf, sync::Arc};
+use threadpool::ThreadPool;
 
 fn ray_color(world: &Arc<HittableList>, r: &Ray, depth: usize) -> Vec3 {
     if depth <= 0 {
@@ -117,29 +117,34 @@ fn main() -> Result<(), Box<dyn Error>> {
         pb.finish();
     });
 
-    let results = thread::scope(|s| -> Vec<Canvas> {
-        let mut results = Vec::new();
-        for _ in 0..number_samples {
-            let camera_arc = Arc::clone(&camera);
-            let hittables_arc = world.get_hittables();
-            let tx_clone = tx.clone();
-            results.push(s.spawn(move |_| {
-                let result = render(
-                    image_height,
-                    image_width,
-                    camera_arc,
-                    hittables_arc,
-                    max_depth,
-                );
-                tx_clone.send(()).unwrap();
-                result
-            }));
-        }
-        results.into_iter().map(|x| x.join().unwrap()).collect()
-    })
-    .map_err(|err| format!("{:?}", err))?;
+    let (data_tx, data_rx) = unbounded::<Canvas>();
+    let tp = ThreadPool::default();
 
-    cv = results.into_iter().fold(cv, |acc, b| acc + b);
+    for _ in 0..number_samples {
+        let camera_arc = Arc::clone(&camera);
+        let hittables_arc = world.get_hittables();
+        let tx_clone = tx.clone();
+        let data_tx_clone = data_tx.clone();
+
+        tp.execute(move || {
+            let result = render(
+                image_height,
+                image_width,
+                camera_arc,
+                hittables_arc,
+                max_depth,
+            );
+            tx_clone.send(()).unwrap();
+            data_tx_clone.send(result).unwrap();
+        })
+    }
+
+    tp.join();
+
+    cv = data_rx
+        .iter()
+        .take(number_samples)
+        .fold(cv, |acc, b| acc + b);
 
     cv.normalize();
     cv.gamma_correction();
