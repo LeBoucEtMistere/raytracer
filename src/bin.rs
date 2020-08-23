@@ -60,12 +60,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut cv = Canvas::new_initialized(image_height, image_width);
 
     // Camera
-    let camera = Arc::new(Camera::new(Vec3::new(0.0, 0.0, 3.0), 40.0, aspect_ratio));
+    let camera = Camera::builder()
+        .set_origin(Vec3::new(0.0, 0.0, 4.0))
+        .set_look_at(Vec3::new(-0.5, 0.0, 0.0))
+        .set_v_up(Vec3::new(0.1, 1.0, 0.0))
+        .build();
 
     // Materials
     let mut material_atlas = MaterialAtlas::new();
-    material_atlas.insert_material("DiffuseGreen", Diffuse::new(Vec3::new(0.1, 0.6, 0.0)));
-    material_atlas.insert_material("MetalYellow", Metal::new(Vec3::new(0.8, 0.6, 0.2), 0.3));
+    material_atlas.insert_material("DiffuseGreen", Diffuse::new(Vec3::new(0.1, 0.4, 0.6)));
+    material_atlas.insert_material("MetalYellow", Metal::new(Vec3::new(0.8, 0.6, 0.2), 0.8));
     material_atlas.insert_material("Dielectric", Dielectric::new(0.8));
 
     // Objects
