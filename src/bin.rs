@@ -60,15 +60,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut cv = Canvas::new_initialized(image_height, image_width);
 
     // Camera
-    let viewport_height = 2.0;
-    let viewport_width = aspect_ratio * viewport_height;
-    let focal_length = 2.0;
-    let camera = Arc::new(Camera::new(
-        Vec3::new(0.0, 0.0, 3.0),
-        focal_length,
-        viewport_width,
-        viewport_height,
-    ));
+    let camera = Arc::new(Camera::new(Vec3::new(0.0, 0.0, 3.0), 40.0, aspect_ratio));
 
     // Materials
     let mut material_atlas = MaterialAtlas::new();

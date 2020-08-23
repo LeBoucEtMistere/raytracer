@@ -8,17 +8,15 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(origin: Vec3, focal_length: f32, viewport_width: f32, viewport_height: f32) -> Self {
-        let horizontal = vec3(viewport_width, 0.0, 0.0);
-        let vertical = vec3(0.0, viewport_height, 0.0);
+    pub fn new(origin: Vec3, vertical_fov: f32, aspect_ratio: f32) -> Self {
+        let h: f32 = f32::tan(vertical_fov * std::f32::consts::PI / 360.0f32);
+        let horizontal = vec3(aspect_ratio * 2.0 * h, 0.0, 0.0);
+        let vertical = vec3(0.0, 2.0 * h, 0.0);
         Camera {
             origin,
             horizontal,
             vertical,
-            lower_left_corner: origin
-                - horizontal / 2f32
-                - vertical / 2f32
-                - vec3(0f32, 0f32, focal_length),
+            lower_left_corner: origin - horizontal / 2f32 - vertical / 2f32 - vec3(0f32, 0f32, 1.0),
         }
     }
     pub fn get_ray_from_coords(&self, u: f32, v: f32) -> Ray {
