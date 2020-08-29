@@ -60,7 +60,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut cv = Canvas::new_initialized(image_height, image_width);
 
     // Camera
-    let look_from = Vec3::new(0.0, 0.0, 4.0);
+    let look_from = Vec3::new(0.0, 0.6, 4.0);
     let look_at = Vec3::new(0.0, 0.0, -1.0);
     let camera = Camera::builder()
         .set_origin(look_from)
@@ -75,18 +75,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Materials
     let mut material_atlas = MaterialAtlas::new();
     material_atlas.insert_material("DiffuseGreen", Diffuse::new(Vec3::new(0.1, 0.4, 0.6)));
-    material_atlas.insert_material("MetalYellow", Metal::new(Vec3::new(0.8, 0.6, 0.2), 0.8));
-    material_atlas.insert_material("Dielectric", Dielectric::new(0.8));
+    material_atlas.insert_material("MetalYellow", Metal::new(Vec3::new(0.7, 0.6, 0.5), 0.0));
+    material_atlas.insert_material("Dielectric", Dielectric::new(1.5));
 
     // Objects
     let world = World::builder()
         .add_object(Sphere::new(
-            Vec3::new(-1.1, 0.0, 0.0),
+            Vec3::new(-1.1, 0.0, 0.5),
             0.5,
             material_atlas.get_material("DiffuseGreen").unwrap(),
         ))
         .add_object(Sphere::new(
-            Vec3::new(1.1, 0.0, -2.0),
+            Vec3::new(1.1, 0.0, -1.5),
             0.5,
             material_atlas.get_material("Dielectric").unwrap(),
         ))
