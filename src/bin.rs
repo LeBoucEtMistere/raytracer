@@ -54,56 +54,99 @@ fn render(
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Image
-    let aspect_ratio = 16.0f32 / 9.0f32;
-    let image_width = 1080usize;
+    let aspect_ratio = 3.0f32 / 2.0f32;
+    let image_width = 1200usize;
     let image_height = (image_width as f32 / aspect_ratio) as usize;
     let mut cv = Canvas::new_initialized(image_height, image_width);
 
     // Camera
-    let look_from = Vec3::new(0.0, 0.6, 4.0);
-    let look_at = Vec3::new(0.0, 0.0, -1.0);
+    let look_from = Vec3::new(13.0, 2.0, 3.0);
+    let look_at = Vec3::new(0.0, 0.0, 0.0);
     let camera = Camera::builder()
         .set_origin(look_from)
         .set_look_at(look_at)
         .set_v_up(Vec3::new(0.0, 1.0, 0.0))
         .set_focus(FocusData {
-            aperture: 0.15f32,
-            focus_distance: (look_at - look_from).norm(),
+            aperture: 0.1f32,
+            focus_distance: 10.0,
         })
         .build();
 
     // Materials
     let mut material_atlas = MaterialAtlas::new();
-    material_atlas.insert_material("DiffuseGreen", Diffuse::new(Vec3::new(0.1, 0.4, 0.6)));
-    material_atlas.insert_material("MetalYellow", Metal::new(Vec3::new(0.7, 0.6, 0.5), 0.0));
-    material_atlas.insert_material("Dielectric", Dielectric::new(1.5));
+    material_atlas.insert_material("GroundMat", Diffuse::new(Vec3::new(0.5, 0.5, 0.5)));
 
-    // Objects
-    let world = World::builder()
-        .add_object(Sphere::new(
-            Vec3::new(-1.1, 0.0, 0.5),
-            0.5,
-            material_atlas.get_material("DiffuseGreen").unwrap(),
-        ))
-        .add_object(Sphere::new(
-            Vec3::new(1.1, 0.0, -1.5),
-            0.5,
-            material_atlas.get_material("Dielectric").unwrap(),
-        ))
-        .add_object(Sphere::new(
-            Vec3::new(0.0, 0.0, -1.0),
-            0.5,
-            material_atlas.get_material("MetalYellow").unwrap(),
-        ))
-        .add_object(Sphere::new(
-            Vec3::new(0.0, -100.5, -1.0),
-            100.0,
-            material_atlas.get_material("Default").unwrap(),
-        ))
-        .build();
+    // Add ground
+    let mut world_builder = World::builder();
+    world_builder = world_builder.add_object(Sphere::new(
+        Vec3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        material_atlas.get_material("GroundMat").unwrap(),
+    ));
+
+    // Add multiple small random spheres
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat = random::<f32>();
+            let center = Vec3::new(
+                a as f32 + 0.9 * random::<f32>(),
+                0.2,
+                b as f32 + 0.9 * random::<f32>(),
+            );
+
+            if (center - Vec3::new(4.0, 0.2, 0.0)).norm() > 0.9 {
+                let mat_name = format!("mat_{}_{}", a, b);
+
+                if choose_mat < 0.8 {
+                    // diffuse
+                    let albedo = Vec3::new(random(), random(), random());
+                    material_atlas.insert_material(&mat_name, Diffuse::new(albedo));
+                } else if choose_mat < 0.95 {
+                    // metal
+                    let albedo = Vec3::new(random(), random(), random());
+                    let fuzz = random::<f32>() / 2.0;
+                    material_atlas.insert_material(&mat_name, Metal::new(albedo, fuzz));
+                } else {
+                    // glass
+                    material_atlas.insert_material(&mat_name, Dielectric::new(1.5));
+                }
+
+                world_builder = world_builder.add_object(Sphere::new(
+                    center,
+                    0.2,
+                    material_atlas.get_material(&mat_name).unwrap(),
+                ));
+            }
+        }
+    }
+
+    // Create 3 large spheres
+
+    material_atlas.insert_material("Large1", Dielectric::new(1.5));
+    world_builder = world_builder.add_object(Sphere::new(
+        Vec3::new(0.0, 1.0, 0.0),
+        1.0,
+        material_atlas.get_material("Large1").unwrap(),
+    ));
+
+    material_atlas.insert_material("Large2", Diffuse::new(Vec3::new(0.4, 0.2, 0.1)));
+    world_builder = world_builder.add_object(Sphere::new(
+        Vec3::new(-4.0, 1.0, 0.0),
+        1.0,
+        material_atlas.get_material("Large2").unwrap(),
+    ));
+
+    material_atlas.insert_material("Large3", Metal::new(Vec3::new(0.7, 0.6, 0.5), 0.0));
+    world_builder = world_builder.add_object(Sphere::new(
+        Vec3::new(4.0, 1.0, 0.0),
+        1.0,
+        material_atlas.get_material("Large3").unwrap(),
+    ));
+
+    let world = world_builder.build();
 
     // Render
-    let number_samples = 100usize;
+    let number_samples = 300usize;
     let max_depth = 50usize;
 
     // Progress tracking
