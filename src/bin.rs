@@ -70,6 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             aperture: 0.1f32,
             focus_distance: 10.0,
         })
+        .set_vertical_fov(20.0)
         .build();
 
     // Materials
