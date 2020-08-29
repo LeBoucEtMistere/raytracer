@@ -60,10 +60,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut cv = Canvas::new_initialized(image_height, image_width);
 
     // Camera
+    let look_from = Vec3::new(0.0, 0.0, 4.0);
+    let look_at = Vec3::new(0.0, 0.0, -1.0);
     let camera = Camera::builder()
-        .set_origin(Vec3::new(0.0, 0.0, 4.0))
-        .set_look_at(Vec3::new(-0.5, 0.0, 0.0))
-        .set_v_up(Vec3::new(0.1, 1.0, 0.0))
+        .set_origin(look_from)
+        .set_look_at(look_at)
+        .set_v_up(Vec3::new(0.0, 1.0, 0.0))
+        .set_focus(FocusData {
+            aperture: 0.15f32,
+            focus_distance: (look_at - look_from).norm(),
+        })
         .build();
 
     // Materials
@@ -75,12 +81,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Objects
     let world = World::builder()
         .add_object(Sphere::new(
-            Vec3::new(-1.1, 0.0, -1.0),
+            Vec3::new(-1.1, 0.0, 0.0),
             0.5,
             material_atlas.get_material("DiffuseGreen").unwrap(),
         ))
         .add_object(Sphere::new(
-            Vec3::new(1.1, 0.0, -1.0),
+            Vec3::new(1.1, 0.0, -2.0),
             0.5,
             material_atlas.get_material("Dielectric").unwrap(),
         ))
