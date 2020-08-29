@@ -14,6 +14,15 @@ pub fn random_in_unit_sphere() -> Vec3 {
     }
 }
 
+pub fn random_in_unit_disk() -> Vec3 {
+    loop {
+        let p = Vec3::new(rand_range_f32(-1.0, 1.0), rand_range_f32(-1.0, 1.0), 0.0);
+        if length2(&p) < 1f32 {
+            return p;
+        };
+    }
+}
+
 pub fn random_unit_vector() -> Vec3 {
     let a = rand_range_f32(0f32, 2f32 * std::f32::consts::PI);
     let z = rand_range_f32(-1f32, 1f32);

@@ -9,7 +9,7 @@ mod ray;
 mod utils;
 mod world;
 
-pub use camera::Camera;
+pub use camera::{Camera, FocusData};
 pub use canvas::Canvas;
 pub use collision::HittableList;
 pub use material_atlas::MaterialAtlas;
