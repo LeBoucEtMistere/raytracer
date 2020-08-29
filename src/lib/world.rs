@@ -9,7 +9,7 @@ pub struct WorldBuilder {
 }
 
 impl WorldBuilder {
-    pub fn add_object(mut self, object: impl Hittable + 'static) -> Self {
+    pub fn add_object(&mut self, object: impl Hittable + 'static) -> &mut Self {
         let hittable: Arc<dyn Hittable> = Arc::new(object) as Arc<dyn Hittable>;
         self.hittables.add_hittable(hittable);
         self

@@ -79,7 +79,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Add ground
     let mut world_builder = World::builder();
-    world_builder = world_builder.add_object(Sphere::new(
+    world_builder.add_object(Sphere::new(
         Vec3::new(0.0, -1000.0, 0.0),
         1000.0,
         material_atlas.get_material("GroundMat").unwrap(),
@@ -112,7 +112,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     material_atlas.insert_material(&mat_name, Dielectric::new(1.5));
                 }
 
-                world_builder = world_builder.add_object(Sphere::new(
+                world_builder.add_object(Sphere::new(
                     center,
                     0.2,
                     material_atlas.get_material(&mat_name).unwrap(),
@@ -124,21 +124,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Create 3 large spheres
 
     material_atlas.insert_material("Large1", Dielectric::new(1.5));
-    world_builder = world_builder.add_object(Sphere::new(
+    world_builder.add_object(Sphere::new(
         Vec3::new(0.0, 1.0, 0.0),
         1.0,
         material_atlas.get_material("Large1").unwrap(),
     ));
 
     material_atlas.insert_material("Large2", Diffuse::new(Vec3::new(0.4, 0.2, 0.1)));
-    world_builder = world_builder.add_object(Sphere::new(
+    world_builder.add_object(Sphere::new(
         Vec3::new(-4.0, 1.0, 0.0),
         1.0,
         material_atlas.get_material("Large2").unwrap(),
     ));
 
     material_atlas.insert_material("Large3", Metal::new(Vec3::new(0.7, 0.6, 0.5), 0.0));
-    world_builder = world_builder.add_object(Sphere::new(
+    world_builder.add_object(Sphere::new(
         Vec3::new(4.0, 1.0, 0.0),
         1.0,
         material_atlas.get_material("Large3").unwrap(),
