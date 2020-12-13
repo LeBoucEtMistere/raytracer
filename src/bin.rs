@@ -7,7 +7,7 @@ use crossbeam_channel::unbounded;
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra_glm::Vec3;
 use rand::prelude::*;
-use std::{error::Error, path::PathBuf, sync::Arc};
+use std::{error::Error, path::PathBuf, sync::Arc, thread, time::Duration};
 use threadpool::ThreadPool;
 
 fn ray_color(world: &Arc<HittableList>, r: &Ray, depth: usize) -> Vec3 {
@@ -147,8 +147,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let world = world_builder.build();
 
     // Render
-    let number_samples = 300usize;
-    let max_depth = 50usize;
+    let number_samples = 32usize;
+    let max_depth = 8usize;
 
     // Progress tracking
     let (tx, rx) = unbounded::<()>();
@@ -160,9 +160,24 @@ fn main() -> Result<(), Box<dyn Error>> {
         .progress_chars("#>-"));
         pb.set_position(0);
         let mut done = 0usize;
-        for _msg in rx.iter() {
-            done += 1;
+        let mut finished = false;
+        while !finished {
+            for _msg in rx.try_iter() {
+                done += 1;
+                pb.set_position(done as u64);
+            }
+            match rx.try_recv() {
+                Err(crossbeam_channel::TryRecvError::Empty) => {}
+                Err(crossbeam_channel::TryRecvError::Disconnected) => {
+                    finished = true;
+                }
+                Ok(_msg) => {
+                    done += 1;
+                    pb.set_position(done as u64);
+                }
+            }
             pb.set_position(done as u64);
+            thread::sleep(Duration::from_millis(500));
         }
         pb.finish();
     });
