@@ -15,10 +15,10 @@ path = "src/bin.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nalgebra-glm = "0.7"
+nalgebra-glm = "0.9"
 rand = "0.7.3"
-ndarray = { version= "0.13.1", features= ["rayon"]}
+ndarray = { version= "0.14.0", features= ["rayon"]}
 itertools = "0.9.0"
 indicatif = "0.15.0"
-crossbeam-channel = "0.4.3"
+crossbeam-channel = "0.5.0"
 threadpool = "1.8.1"
