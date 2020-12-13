@@ -6,6 +6,7 @@ pub mod material;
 mod material_atlas;
 pub mod object;
 mod ray;
+mod renderer;
 mod utils;
 mod world;
 
@@ -14,4 +15,5 @@ pub use canvas::Canvas;
 pub use collision::HittableList;
 pub use material_atlas::MaterialAtlas;
 pub use ray::Ray;
+pub use renderer::Renderer;
 pub use world::World;
