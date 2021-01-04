@@ -1,5 +1,8 @@
 use super::Position;
-use crate::collision::{HitRecord, Hittable};
+use crate::{
+    aabb::AABB,
+    collision::{HitRecord, Hittable},
+};
 use crate::{material::Material, ray::Ray};
 use nalgebra_glm::{dot, length2, Vec3};
 use std::sync::Arc;
@@ -57,6 +60,13 @@ impl Hittable for Sphere {
             }
         }
         None
+    }
+
+    fn bounding_box(&self, t0: f32, t1: f32) -> Option<crate::aabb::AABB> {
+        Some(AABB {
+            min: self.center - Vec3::new(self.radius, self.radius, self.radius),
+            max: self.center + Vec3::new(self.radius, self.radius, self.radius),
+        })
     }
 }
 

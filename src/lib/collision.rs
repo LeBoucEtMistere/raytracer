@@ -1,3 +1,4 @@
+use crate::aabb::AABB;
 use crate::material::Material;
 use crate::ray::Ray;
 use nalgebra_glm::{dot, Vec3};
@@ -35,6 +36,7 @@ impl HitRecord {
 }
 pub trait Hittable: Send + Sync {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
+    fn bounding_box(&self, t0: f32, t1: f32) -> Option<AABB>;
 }
 
 #[derive(Default)]
@@ -57,8 +59,10 @@ impl HittableList {
     pub fn clear(&mut self) {
         self.hittables.clear();
     }
+}
 
-    pub fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
+impl Hittable for HittableList {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let mut closest_hit_record: Option<HitRecord> = None;
 
         let mut closest_so_far = t_max;
@@ -71,5 +75,28 @@ impl HittableList {
         }
 
         closest_hit_record
+    }
+
+    fn bounding_box(&self, t0: f32, t1: f32) -> Option<AABB> {
+        if self.hittables.is_empty() {
+            return None;
+        }
+
+        let is_first_box = true;
+        let mut output_box: Option<AABB> = None;
+
+        for object in &self.hittables {
+            if let Some(temp_box) = object.bounding_box(t0, t1) {
+                if is_first_box {
+                    output_box = Some(temp_box);
+                } else {
+                    output_box = Some(AABB::surrounding_box(&output_box.unwrap(), &temp_box));
+                }
+            } else {
+                return None;
+            }
+        }
+
+        return output_box;
     }
 }

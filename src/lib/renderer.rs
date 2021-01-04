@@ -5,7 +5,7 @@ use rand::prelude::*;
 use std::{path::Path, sync::Arc, thread, thread::JoinHandle, time::Duration};
 use threadpool::ThreadPool;
 
-use crate::export::PPMWriter;
+use crate::{collision::Hittable, export::PPMWriter};
 use crate::{Camera, Canvas, HittableList, Ray, World};
 
 pub struct Renderer {

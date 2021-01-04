@@ -102,10 +102,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Render
     let p = PathBuf::from("laifilfse.ppm");
     Renderer::new(world, camera)
-        .width(image_width)
-        .height(image_height)
-        .bounces(8)
-        .samples(32)
+        // .width(image_width)
+        // .height(image_height)
+        .bounces(32)
+        .samples(128)
         .render()
         .save(&p)
         .map_err(|er| er.into())
