@@ -134,12 +134,12 @@ impl Camera {
                 let rd = lens_radius * random_in_unit_disk();
                 let offset = self.u * rd.x + self.v * rd.y;
 
-                return Ray::new(
+                Ray::new(
                     self.origin + offset,
                     self.lower_left_corner + c_u * self.horizontal + c_v * self.vertical
                         - self.origin
                         - offset,
-                );
+                )
             }
             // else we cast a normal ray from a single point
             None => Ray::new(

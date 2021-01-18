@@ -40,7 +40,7 @@ impl Material for Dielectric {
             return Some(Ray::new(hit_record.point, reflected));
         }
         let refracted = refract_vec(&unit_direction, &hit_record.normal, etai_over_etat);
-        return Some(Ray::new(hit_record.point, refracted));
+        Some(Ray::new(hit_record.point, refracted))
     }
     // returns the albedo or attenuation of the surface
     fn albedo(&self) -> &Vec3 {

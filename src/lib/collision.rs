@@ -21,9 +21,9 @@ impl HitRecord {
     ) -> Self {
         let front_face = dot(&r.direction, outward_normal) < 0f32;
         let normal = if front_face {
-            outward_normal.clone()
+            *outward_normal
         } else {
-            -outward_normal.clone()
+            -(*outward_normal)
         };
         HitRecord {
             point: r.at(t),
@@ -97,6 +97,6 @@ impl Hittable for HittableList {
             }
         }
 
-        return output_box;
+        output_box
     }
 }

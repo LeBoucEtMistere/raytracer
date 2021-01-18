@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .build();
 
     // Materials
-    let mut material_atlas = MaterialAtlas::new();
+    let mut material_atlas = MaterialAtlas::default();
     material_atlas.insert_material("GroundMat", Diffuse::new(Vec3::new(0.5, 0.5, 0.5)));
 
     // Add ground
@@ -96,17 +96,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Image
     let aspect_ratio = 3.0f32 / 2.0f32;
-    let image_width = 1200usize;
+    let image_width = 600usize;
     let image_height = (image_width as f32 / aspect_ratio) as usize;
 
     // Render
     let p = PathBuf::from("laifilfse.ppm");
     Renderer::new(world, camera)
-        // .width(image_width)
-        // .height(image_height)
-        .bounces(32)
-        .samples(128)
+        .width(image_width)
+        .height(image_height)
+        .bounces(2)
+        .samples(16)
         .render()
         .save(&p)
-        .map_err(|er| er.into())
+        .map_err(|err| err.into())
 }

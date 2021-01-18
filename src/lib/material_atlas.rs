@@ -6,8 +6,8 @@ pub struct MaterialAtlas {
     atlas: HashMap<String, Arc<Box<dyn Material>>>,
 }
 
-impl MaterialAtlas {
-    pub fn new() -> Self {
+impl Default for MaterialAtlas {
+    fn default() -> Self {
         let mut atlas = HashMap::new();
         atlas.insert(
             String::from("Default"),
@@ -15,7 +15,9 @@ impl MaterialAtlas {
         );
         MaterialAtlas { atlas }
     }
+}
 
+impl MaterialAtlas {
     pub fn insert_material(
         &mut self,
         name: &str,

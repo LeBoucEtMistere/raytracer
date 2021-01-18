@@ -46,11 +46,11 @@ impl Canvas {
 }
 
 impl<'a> PPMWriter<'a> for Canvas {
-    fn get_dim(self: &Self) -> (usize, usize) {
+    fn get_dim(&self) -> (usize, usize) {
         (self.width, self.height)
     }
 
-    fn get_pixels(self: &'a Self) -> Vec<RGBPixel> {
+    fn get_pixels(&'a self) -> Vec<RGBPixel> {
         self.data
             .iter()
             .chunks(3)

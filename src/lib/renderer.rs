@@ -5,8 +5,8 @@ use rand::prelude::*;
 use std::{path::Path, sync::Arc, thread, thread::JoinHandle, time::Duration};
 use threadpool::ThreadPool;
 
-use crate::{collision::Hittable, export::PPMWriter};
-use crate::{Camera, Canvas, HittableList, Ray, World};
+use crate::{bvh::BVHNode, collision::Hittable, export::PPMWriter};
+use crate::{Camera, Canvas, Ray, World};
 
 pub struct Renderer {
     world: World,
@@ -91,7 +91,7 @@ impl Renderer {
         canvas_height: usize,
         canvas_width: usize,
         camera: Arc<Camera>,
-        world: Arc<HittableList>,
+        world: Arc<BVHNode>,
         max_depth: usize,
     ) -> Canvas {
         let mut temp_cv = Canvas::new_initialized(canvas_height, canvas_width);
@@ -112,8 +112,8 @@ impl Renderer {
         temp_cv
     }
 
-    fn ray_color(world: &Arc<HittableList>, r: &Ray, depth: usize) -> Vec3 {
-        if depth <= 0 {
+    fn ray_color(world: &Arc<BVHNode>, r: &Ray, depth: usize) -> Vec3 {
+        if depth == 0 {
             return Vec3::new(0.0, 0.0, 0.0);
         }
 
@@ -125,7 +125,7 @@ impl Renderer {
                 return albedo.component_mul(&Renderer::ray_color(world, &scattered, depth - 1));
             }
             // no scattered ray, return black
-            return Vec3::new(0.0, 0.0, 0.0);
+            Vec3::new(0.0, 0.0, 0.0)
         } else {
             let unit_direction = nalgebra_glm::normalize(&r.direction);
             let t = 0.5 * (unit_direction.y + 1.0); // t is between 0.0 and 1.0
@@ -175,6 +175,6 @@ pub struct Render {
 
 impl Render {
     pub fn save<P: AsRef<Path>>(&self, path: &P) -> std::io::Result<()> {
-        self.canvas.write_to_file(&path).map_err(|e| e.into())
+        self.canvas.write_to_file(&path).map_err(|e| e)
     }
 }

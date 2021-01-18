@@ -2,6 +2,7 @@ use nalgebra_glm::Vec3;
 
 use crate::Ray;
 
+#[derive(Clone, Copy)]
 pub struct AABB {
     pub min: Vec3,
     pub max: Vec3,
@@ -23,7 +24,7 @@ impl AABB {
                 return false;
             }
         }
-        return true;
+        true
     }
 
     pub fn surrounding_box(box0: &Self, box1: &Self) -> Self {
