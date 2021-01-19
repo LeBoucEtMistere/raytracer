@@ -4,7 +4,7 @@ A Rust implementation of a basic raytracer based on Peter Shirley's blog ["Ray T
 
 This project is mostly for me to play with Rust, raytracing, and performances.
 
-I try to keep render times fast by using multi-threaded code, and by doing optimization (usage of flamegraphs and benchmarking).
+I try to keep render times fast by using multi-threaded code and performant datasctructures (BVH), and by doing optimization (usage of flamegraphs and benchmarking).
 
 Example image generated:
 
