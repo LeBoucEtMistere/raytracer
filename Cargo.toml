@@ -6,15 +6,14 @@ edition = "2018"
 
 [lib]
 name = "raytracing_lib"
-path = "src/lib/lib.rs"
 
-[[bin]]
-name = "raytracer"
-path = "src/bin.rs"
+[[example]]
+name = "benchmark"
+path = "examples/benchmark.rs"
 
-[[bin]]
-name = "test"
-path = "src/minimal_bin.rs"
+[[example]]
+name = "bvh"
+path = "examples/minimal_bvh_test.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
