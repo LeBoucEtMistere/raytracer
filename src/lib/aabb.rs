@@ -2,7 +2,7 @@ use nalgebra_glm::Vec3;
 
 use crate::Ray;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct AABB {
     pub min: Vec3,
     pub max: Vec3,

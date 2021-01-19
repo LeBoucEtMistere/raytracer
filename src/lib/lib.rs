@@ -14,7 +14,7 @@ mod world;
 
 pub use camera::{Camera, FocusData};
 pub use canvas::Canvas;
-pub use collision::HittableList;
+pub use collision::{Hittable, HittableList};
 pub use material_atlas::MaterialAtlas;
 pub use ray::Ray;
 pub use renderer::Renderer;

@@ -1,6 +1,7 @@
 use super::bvh::BVHNode;
 use super::collision::Hittable;
 use std::sync::Arc;
+
 pub struct World {
     bvh_tree: Arc<BVHNode>,
 }

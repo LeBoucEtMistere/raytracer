@@ -14,6 +14,12 @@ pub struct Sphere {
     material: Arc<Box<dyn Material>>,
 }
 
+impl std::fmt::Debug for Sphere {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("c:{:?} R:{:?}", self.center, self.radius))
+    }
+}
+
 impl Sphere {
     pub fn new(center: Vec3, radius: f32, material: Arc<Box<dyn Material>>) -> Self {
         Sphere {

@@ -96,7 +96,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Image
     let aspect_ratio = 3.0f32 / 2.0f32;
-    let image_width = 600usize;
+    let image_width = 1080usize;
     let image_height = (image_width as f32 / aspect_ratio) as usize;
 
     // Render
@@ -104,8 +104,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     Renderer::new(world, camera)
         .width(image_width)
         .height(image_height)
-        .bounces(2)
-        .samples(16)
+        .bounces(50)
+        .samples(128)
         .render()
         .save(&p)
         .map_err(|err| err.into())

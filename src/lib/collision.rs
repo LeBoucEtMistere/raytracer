@@ -1,15 +1,30 @@
 use crate::aabb::AABB;
 use crate::material::Material;
 use crate::ray::Ray;
+use derive_more::Display;
 use nalgebra_glm::{dot, Vec3};
 use std::sync::Arc;
 
+#[derive(Display)]
+#[display(
+    fmt = "Hit Record, point:{:?}, normal:{:?}, t:{:?}, front_face:{:?}",
+    point,
+    normal,
+    t,
+    front_face
+)]
 pub struct HitRecord {
     pub point: Vec3,
     pub normal: Vec3,
     pub t: f32,
     pub front_face: bool,
     pub material_hit: Arc<Box<dyn Material>>,
+}
+
+impl std::fmt::Debug for HitRecord {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{}", self))
+    }
 }
 
 impl HitRecord {

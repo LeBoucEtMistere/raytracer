@@ -8,6 +8,17 @@ pub struct BVHNode {
     pub aabb: AABB,
 }
 
+impl std::fmt::Debug for BVHNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!(
+            "BVHNode: Left={:?} | Right={:?} | AABB={:?}",
+            self.left.bounding_box(0.0, 0.0),
+            self.right.bounding_box(0.0, 0.0),
+            self.aabb
+        ))
+    }
+}
+
 impl BVHNode {
     pub fn new(src_hittables: &[Arc<dyn Hittable>]) -> Result<Self, String> {
         let random_axis = AxisIndexes::random_axis();
@@ -35,11 +46,11 @@ impl BVHNode {
             },
             _ => {
                 // need to perform a clone of the slice to sort it :/
-                let mut sorted_slice = Vec::<Arc<dyn Hittable>>::new();
-                sorted_slice.extend_from_slice(src_hittables);
-                sorted_slice.sort_unstable_by(|a, b| box_compare(a, b, random_axis).unwrap());
-                let mid = sorted_slice.len() as usize / 2;
-                let (left_src, right_src) = sorted_slice.split_at(mid);
+                let mut sorted_vec = Vec::<Arc<dyn Hittable>>::new();
+                sorted_vec.extend_from_slice(src_hittables);
+                sorted_vec.sort_unstable_by(|a, b| box_compare(a, b, random_axis).unwrap());
+                let mid = sorted_vec.len() as usize / 2;
+                let (left_src, right_src) = sorted_vec.split_at(mid);
                 left_node = Arc::new(BVHNode::new(left_src)?);
                 right_node = Arc::new(BVHNode::new(right_src)?);
             }
@@ -78,7 +89,15 @@ impl Hittable for BVHNode {
                 .hit(r, t_min, if left_hit { t.unwrap() } else { t_max });
             let right_hit = rec_right.is_some();
 
-            if left_hit {
+            if left_hit && right_hit {
+                let rec_left = rec_left.unwrap();
+                let rec_right = rec_right.unwrap();
+                if rec_left.t <= rec_right.t {
+                    Some(rec_left)
+                } else {
+                    Some(rec_right)
+                }
+            } else if left_hit {
                 rec_left
             } else if right_hit {
                 rec_right
