@@ -9,6 +9,7 @@ mod material_atlas;
 pub mod object;
 mod ray;
 mod renderer;
+pub mod scene;
 mod utils;
 mod world;
 
