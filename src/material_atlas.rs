@@ -28,6 +28,6 @@ impl MaterialAtlas {
     }
 
     pub fn get_material(&self, name: &str) -> Option<Arc<Box<dyn Material>>> {
-        self.atlas.get(name).map(|x| Arc::clone(x))
+        self.atlas.get(name).map(Arc::clone)
     }
 }

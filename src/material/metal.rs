@@ -11,7 +11,7 @@ pub struct Metal {
 
 impl Metal {
     pub fn new(albedo: Vec3, fuziness: f32) -> Self {
-        let fuziness = f32::min(1.0, f32::max(0.0, fuziness));
+        let fuziness = fuziness.clamp(0.0, 1.0);
         Metal { albedo, fuziness }
     }
 }

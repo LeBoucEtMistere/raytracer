@@ -2,6 +2,7 @@ use nalgebra_glm::Vec3;
 
 use crate::Ray;
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Copy, Debug)]
 pub struct AABB {
     pub min: Vec3,

@@ -49,7 +49,7 @@ impl BVHNode {
                 let mut sorted_vec = Vec::<Arc<dyn Hittable>>::new();
                 sorted_vec.extend_from_slice(src_hittables);
                 sorted_vec.sort_unstable_by(|a, b| box_compare(a, b, random_axis).unwrap());
-                let mid = sorted_vec.len() as usize / 2;
+                let mid = sorted_vec.len() / 2;
                 let (left_src, right_src) = sorted_vec.split_at(mid);
                 left_node = Arc::new(BVHNode::new(left_src)?);
                 right_node = Arc::new(BVHNode::new(right_src)?);
@@ -78,10 +78,9 @@ impl Hittable for BVHNode {
         if self.aabb.hit(r, t_min, t_max) {
             let mut left_hit = false;
             let mut t = None;
-            let rec_left = self.left.hit(r, t_min, t_max).map(|record| {
+            let rec_left = self.left.hit(r, t_min, t_max).inspect(|record| {
                 t = Some(record.t);
                 left_hit = true;
-                record
             });
 
             let rec_right = self
