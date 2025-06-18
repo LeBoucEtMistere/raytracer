@@ -18,5 +18,5 @@ pub use canvas::Canvas;
 pub use collision::{Hittable, HittableList};
 pub use material_atlas::MaterialAtlas;
 pub use ray::Ray;
-pub use renderer::Renderer;
+pub use renderer::{RenderPass, Renderer};
 pub use world::World;

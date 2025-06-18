@@ -6,7 +6,7 @@ use nalgebra_glm::Vec3;
 use ndarray::{s, Array3};
 use std::ops::{Add, AddAssign};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Canvas {
     height: usize,
     width: usize,

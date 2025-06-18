@@ -1,0 +1,41 @@
+objects:
+  - object_id: ground
+    material: GroundMat
+    geometry:
+      !Sphere
+      center: [0, -1000, 0]
+      radius: 1000
+  - object_id: sphere1
+    material: Sphere1
+    geometry:
+      !Sphere
+      center: [0, 1, 0]
+      radius: 1.0
+  - object_id: sphere2
+    material: Sphere2
+    geometry:
+      !Sphere
+      center: [-4, 1, 0]
+      radius: 1.0
+  - object_id: sphere3
+    material: Sphere3
+    geometry:
+      !Sphere
+      center: [4, 1, 0]
+      radius: 1.0
+materials:
+  GroundMat:
+    !Diffuse
+    albedo: [0.5, 0.5, 0.5]
+  Sphere1:
+    !Dielectric
+    refractive_index: 1.5
+  Sphere2:
+    !Diffuse
+    albedo: [0.4, 0.2, 0.1]
+  Sphere3:
+    !Metal
+    albedo: [0.7, 0.6, 0.5]
+    fuziness: 0.5
+    
+    

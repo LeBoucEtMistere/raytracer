@@ -1,0 +1,19 @@
+[package]
+name = "example-gui"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+raytracing_lib = { path = "../../raytracing_lib", features = ["bytes"] }
+nalgebra-glm = { workspace = true }
+iced = { version = "0.13.1", features = [
+    "advanced",
+    "canvas",
+    "image",
+    "tokio",
+] }
+serde_yaml = { workspace = true }
+crossbeam-channel = { workspace = true }
+bytes = "1.10.1"
+tokio = { version = "1.45.1", features = ["sync"] }

@@ -1,6 +1,6 @@
 #[cfg(feature = "bytes")]
 use bytes::BytesMut;
-use crossbeam_channel::{unbounded, Sender};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra_glm::Vec3;
 use rand::prelude::*;
@@ -10,6 +10,13 @@ use threadpool::ThreadPool;
 use crate::{bvh::BVHNode, collision::Hittable, export::PPMWriter};
 use crate::{Camera, Canvas, Ray, World};
 
+#[derive(Debug, Clone)]
+pub struct RenderPass {
+    pub canvas: Canvas,
+    pub current_pass: usize,
+    pub total_passes: usize,
+}
+
 pub struct Renderer {
     world: World,
     camera: Arc<Camera>,
@@ -17,6 +24,8 @@ pub struct Renderer {
     height: usize,
     samples: usize,
     bounces: usize,
+    render_pass_tx: Option<Sender<RenderPass>>,
+    with_cli_progress_tracker: bool,
 }
 
 impl Renderer {
@@ -28,6 +37,8 @@ impl Renderer {
             height: 540,
             samples: 100,
             bounces: 2,
+            render_pass_tx: None,
+            with_cli_progress_tracker: false,
         }
     }
 
@@ -51,40 +62,80 @@ impl Renderer {
         self
     }
 
+    pub fn get_render_pass_rx(&mut self) -> Receiver<RenderPass> {
+        let (tx, rx) = unbounded::<RenderPass>();
+        self.render_pass_tx = Some(tx);
+        rx
+    }
+
+    pub fn with_cli_progress_tracker(mut self) -> Self {
+        self.with_cli_progress_tracker = true;
+        self
+    }
+
     pub fn render(self) -> Render {
         // Progress tracking
-        let (tx, handle) = Renderer::start_progress_tracker(self.samples as u64);
+        let mut progress_tracker = self.start_progress_tracker(self.samples as u64);
 
+        // each independently rendered frame is sent using this channel to a thread that will aggregate them on the go
+        // possibly sending regular updates to any registered render_pass channel.
         let (data_tx, data_rx) = unbounded::<Canvas>();
-        let tp = ThreadPool::default();
+        let mut cv = Canvas::new_initialized(self.height, self.width);
+        let total_passes = self.samples;
+        let mut render_pass_tx = self.render_pass_tx;
 
+        let render_pass_aggregator = thread::spawn(move || {
+            let mut render_pass: usize = 1;
+            while let Ok(new_cv) = data_rx.recv() {
+                cv += new_cv;
+                if let Some(render_pass_tx) = render_pass_tx.as_mut() {
+                    let mut output = cv.clone();
+                    output.normalize();
+                    output.gamma_correction();
+                    render_pass_tx
+                        .send(RenderPass {
+                            canvas: output,
+                            current_pass: render_pass,
+                            total_passes,
+                        })
+                        .unwrap();
+                    render_pass += 1;
+                }
+            }
+            cv.normalize();
+            cv.gamma_correction();
+
+            cv
+        });
+
+        // create rendering threadpool and spawn it
+        let tp = ThreadPool::default();
         for _ in 0..self.samples {
             let bounces = self.bounces;
             let height = self.height;
             let width = self.width;
             let camera_arc = Arc::clone(&self.camera);
             let hittables_arc = self.world.get_hittables();
-            let tx_clone = tx.clone();
+            let tx_clone = progress_tracker.as_mut().map(|x| x.0.clone());
             let data_tx_clone = data_tx.clone();
 
             tp.execute(move || {
                 let result =
                     Renderer::compute_render(height, width, camera_arc, hittables_arc, bounces);
-                tx_clone.send(()).unwrap();
+                if let Some(tx) = tx_clone {
+                    tx.send(()).unwrap();
+                }
                 data_tx_clone.send(result).unwrap();
             })
         }
 
         tp.join();
-        let mut cv = Canvas::new_initialized(self.height, self.width);
-        cv = data_rx.iter().take(self.samples).fold(cv, |acc, b| acc + b);
-
-        cv.normalize();
-        cv.gamma_correction();
-
-        // Close progress tracking thread properly
-        drop(tx); // close channel by dropping last alive Sender
-        handle.join().unwrap();
+        if let Some((tx, handle)) = progress_tracker {
+            drop(tx); // close channel by dropping last alive Sender
+                      // Close progress tracking thread properly
+            handle.join().unwrap();
+        }
+        let cv = render_pass_aggregator.join().unwrap();
 
         Render { canvas: cv }
     }
@@ -135,7 +186,10 @@ impl Renderer {
         }
     }
 
-    fn start_progress_tracker(length: u64) -> (Sender<()>, JoinHandle<()>) {
+    fn start_progress_tracker(&self, length: u64) -> Option<(Sender<()>, JoinHandle<()>)> {
+        if !self.with_cli_progress_tracker {
+            return None;
+        }
         // Progress tracking
         let (tx, rx) = unbounded::<()>();
         let progress_thread_handle = std::thread::spawn(move || {
@@ -167,7 +221,7 @@ impl Renderer {
             }
             pb.finish();
         });
-        (tx, progress_thread_handle)
+        Some((tx, progress_thread_handle))
     }
 }
 
