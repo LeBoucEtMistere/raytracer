@@ -16,3 +16,8 @@ pub trait PPMWriter<'a> {
         Ok(())
     }
 }
+
+#[cfg(feature = "bytes")]
+pub trait MemWriter {
+    fn write_rgba_to_buffer(&self, buf: &mut bytes::BytesMut);
+}

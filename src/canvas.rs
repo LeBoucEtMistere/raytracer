@@ -1,3 +1,5 @@
+#[cfg(feature = "bytes")]
+use super::export::MemWriter;
 use super::export::{PPMWriter, RGBPixel};
 use itertools::Itertools;
 use nalgebra_glm::Vec3;
@@ -57,16 +59,31 @@ impl<'a> PPMWriter<'a> for Canvas {
             .into_iter()
             .map(|chunk| {
                 let clamped_values: Vec<u8> = chunk
-                    .map(|x| (256f32 * f32::min(0.999, f32::max(0.0, *x))) as u8)
+                    .map(|x| (256f32 * (*x).clamp(0.0, 0.999)) as u8)
                     .take(3)
                     .collect();
                 RGBPixel(
-                    *clamped_values.get(0).unwrap(),
+                    *clamped_values.first().unwrap(),
                     *clamped_values.get(1).unwrap(),
                     *clamped_values.get(2).unwrap(),
                 )
             })
             .collect()
+    }
+}
+
+#[cfg(feature = "bytes")]
+impl MemWriter for Canvas {
+    fn write_rgba_to_buffer(&self, buf: &mut bytes::BytesMut) {
+        use std::iter::FromIterator;
+
+        *buf =
+            bytes::BytesMut::from_iter(self.data.iter().chunks(3).into_iter().flat_map(|chunk| {
+                chunk
+                    .map(|x| (256f32 * (*x).clamp(0.0, 0.999)) as u8)
+                    .take(3)
+                    .chain(std::iter::once(255u8)) // add fixed alpha layer
+            }))
     }
 }
 

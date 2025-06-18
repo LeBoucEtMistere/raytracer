@@ -1,3 +1,5 @@
+#[cfg(feature = "bytes")]
+use bytes::BytesMut;
 use crossbeam_channel::{unbounded, Sender};
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra_glm::Vec3;
@@ -80,7 +82,7 @@ impl Renderer {
         cv.normalize();
         cv.gamma_correction();
 
-        // Close progress tracking therad properly
+        // Close progress tracking thread properly
         drop(tx); // close channel by dropping last alive Sender
         handle.join().unwrap();
 
@@ -175,6 +177,13 @@ pub struct Render {
 
 impl Render {
     pub fn save<P: AsRef<Path>>(&self, path: &P) -> std::io::Result<()> {
-        self.canvas.write_to_file(&path).map_err(|e| e)
+        self.canvas.write_to_file(&path)
+    }
+
+    #[cfg(feature = "bytes")]
+    pub fn write_rgba_to_buffer(&self, buf: &mut BytesMut) {
+        use crate::export::MemWriter;
+
+        self.canvas.write_rgba_to_buffer(buf);
     }
 }
