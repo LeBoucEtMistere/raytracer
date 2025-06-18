@@ -1,0 +1,10 @@
+[package]
+name = "example-from-scene"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+raytracing_lib = { path = "../../raytracing_lib" }
+nalgebra-glm = { workspace = true }
+serde_yaml = { workspace = true }

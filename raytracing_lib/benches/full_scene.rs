@@ -1,12 +1,17 @@
+use criterion::{criterion_group, criterion_main, Criterion};
+
 use raytracing_lib::material::*;
 use raytracing_lib::object::*;
 use raytracing_lib::*;
 
 use nalgebra_glm::Vec3;
 use rand::prelude::*;
-use std::{error::Error, path::PathBuf};
+use std::path::PathBuf;
+use std::time::Duration;
 
-fn main() -> Result<(), Box<dyn Error>> {
+pub fn criterion_benchmark(c: &mut Criterion) {
+    // create scene
+
     // Camera
     let look_from = Vec3::new(13.0, 2.0, 3.0);
     let look_at = Vec3::new(0.0, 0.0, 0.0);
@@ -99,14 +104,24 @@ fn main() -> Result<(), Box<dyn Error>> {
     let image_width = 1080usize;
     let image_height = (image_width as f32 / aspect_ratio) as usize;
 
-    // Render
     let p = PathBuf::from("laifilfse.ppm");
-    Renderer::new(world, camera)
-        .width(image_width)
-        .height(image_height)
-        .bounces(50)
-        .samples(128)
-        .render()
-        .save(&p)
-        .map_err(|err| err.into())
+
+    let mut group = c.benchmark_group("group");
+    group.sample_size(10).warm_up_time(Duration::from_secs(1));
+    group.bench_function("render with bvh", |b| {
+        b.iter(|| {
+            Renderer::new(world.clone(), camera.clone())
+                .width(image_width)
+                .height(image_height)
+                .bounces(20)
+                .samples(20)
+                .render()
+                .save(&p)
+                .expect("should not error")
+        })
+    });
+    group.finish();
 }
+
+criterion_group!(benches, criterion_benchmark);
+criterion_main!(benches);

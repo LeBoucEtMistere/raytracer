@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .build();
 
     let scene: raytracing_lib::scene::serialization::Scene =
-        serde_yaml::from_str(&fs::read_to_string("examples/scene.yaml")?).unwrap();
+        serde_yaml::from_str(&fs::read_to_string("examples/from_scene/scene.yaml")?).unwrap();
 
     let (_material_atlas, world) =
         std::convert::TryInto::<(MaterialAtlas, World)>::try_into(scene)?;

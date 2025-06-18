@@ -59,6 +59,8 @@ impl CameraBuilder {
         ))
     }
 }
+
+#[derive(Clone)]
 pub struct Camera {
     origin: Vec3,
     horizontal: Vec3,
