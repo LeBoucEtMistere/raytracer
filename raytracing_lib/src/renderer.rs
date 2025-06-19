@@ -143,6 +143,7 @@ impl Renderer {
         }
 
         tp.join();
+        drop(data_tx);
         if let Some((tx, handle)) = progress_tracker {
             drop(tx); // close channel by dropping last alive Sender
                       // Close progress tracking thread properly

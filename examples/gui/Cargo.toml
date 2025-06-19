@@ -17,3 +17,4 @@ serde_yaml = { workspace = true }
 crossbeam-channel = { workspace = true }
 bytes = "1.10.1"
 tokio = { version = "1.45.1", features = ["sync"] }
+pretty-duration = "0.1.1"

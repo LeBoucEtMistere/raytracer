@@ -65,12 +65,13 @@ pub fn raytracer_worker() -> impl Stream<Item = Event> {
                                 // while we are getting render passes messages, loop and propagate events to the UI update logic
                                 if let Some(rp) = rp {
                                     let _ = output.send(Event::RenderPassAvailable(rp)).await;
+                                } else {
+                                    break;
                                 }
                             }
 
                             msg = receiver.select_next_some() => {
                                 if let WorkerMessage::StopRender = msg {
-                                    drop(rx);
                                     break;
                                 }
                             }
@@ -78,6 +79,7 @@ pub fn raytracer_worker() -> impl Stream<Item = Event> {
                         }
                     }
                     state = WorkerState::Idle;
+                    let _ = output.send(Event::RenderFinished).await;
                 }
             }
         }
@@ -110,4 +112,5 @@ pub enum Event {
     WorkerInitialized(mpsc::Sender<WorkerMessage>),
     RenderStarted(usize),
     RenderPassAvailable(raytracing_lib::RenderPass),
+    RenderFinished,
 }

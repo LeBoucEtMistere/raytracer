@@ -1,12 +1,14 @@
 mod raytracing_worker;
+mod render_progress;
 
 use std::error::Error;
 use std::fs;
+use std::time::Instant;
 
 use iced::advanced::graphics::image::image_rs::EncodableLayout;
 use iced::advanced::image::Handle;
 use iced::futures::channel::mpsc::Sender;
-use iced::widget::{button, center, column, image, progress_bar, row};
+use iced::widget::{button, center, column, image, row};
 
 use bytes::BytesMut;
 use iced::Length::Fill;
@@ -16,11 +18,7 @@ use raytracing_lib::export::MemWriter;
 use raytracing_lib::{Camera, FocusData, MaterialAtlas, World};
 
 use crate::raytracing_worker::{RenderRequest, WorkerMessage};
-
-struct ProgressData {
-    current_pass: usize,
-    total_passes: usize,
-}
+use crate::render_progress::{ProgressData, RenderProgress};
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -36,7 +34,7 @@ struct Daemon {
     y_size: u32,
     buf: BytesMut,
     raytracing_worker_tx: Option<Sender<WorkerMessage>>,
-    progress: Option<ProgressData>,
+    render_progress: RenderProgress,
 }
 
 impl Daemon {
@@ -57,7 +55,7 @@ impl Daemon {
                     .as_bytes(),
                 ),
                 raytracing_worker_tx: None,
-                progress: None,
+                render_progress: Default::default(),
             },
             open.map(|_| Message::WindowOpened),
         )
@@ -68,17 +66,12 @@ impl Daemon {
     }
 
     fn view(&self, _window_id: window::Id) -> Element<Message> {
-        let bottom_row = if let Some(progress) = &self.progress {
-            row![
-                progress_bar(
-                    0.0..=progress.total_passes as f32,
-                    progress.current_pass as f32
-                ),
-                button("Stop Render").on_press(Message::StopRender),
-            ]
+        let btn = if let RenderProgress::InProgress(_) = self.render_progress {
+            button("Stop Render").on_press(Message::StopRender)
         } else {
-            row![button("Start Render").on_press(Message::StartRender),]
+            button("Start Render").on_press(Message::StartRender)
         };
+
         column![
             center(
                 image(Handle::from_rgba(
@@ -89,7 +82,9 @@ impl Daemon {
                 .width(Fill)
                 .height(Fill),
             ),
-            bottom_row.padding(10).spacing(5)
+            row![self.render_progress.view(), btn]
+                .padding(10)
+                .spacing(5)
         ]
         .spacing(5)
         .into()
@@ -102,14 +97,27 @@ impl Daemon {
                     self.raytracing_worker_tx = Some(tx);
                 }
                 raytracing_worker::Event::RenderStarted(total_passes) => {
-                    self.progress = Some(ProgressData {
+                    self.render_progress = RenderProgress::InProgress(ProgressData {
                         current_pass: 0,
                         total_passes,
+                        started_at: Instant::now(),
                     })
                 }
                 raytracing_worker::Event::RenderPassAvailable(render_pass) => {
                     render_pass.canvas.write_rgba_to_buffer(&mut self.buf);
-                    self.progress.as_mut().unwrap().current_pass = render_pass.current_pass;
+                    if let RenderProgress::InProgress(rd) = &mut self.render_progress {
+                        rd.current_pass = render_pass.current_pass
+                    }
+                }
+                raytracing_worker::Event::RenderFinished => {
+                    self.render_progress = match &self.render_progress {
+                        RenderProgress::InProgress(rp) => RenderProgress::Finished {
+                            time_taken: Instant::now().duration_since(rp.started_at),
+                        },
+
+                        RenderProgress::Aborted => RenderProgress::Aborted,
+                        _ => unreachable!(),
+                    }
                 }
             },
             Message::StartRender => {
@@ -158,7 +166,7 @@ impl Daemon {
                 if let Some(tx) = &mut self.raytracing_worker_tx {
                     tx.try_send(WorkerMessage::StopRender).unwrap();
                 }
-                self.progress = None;
+                self.render_progress = RenderProgress::Aborted;
             }
         }
     }
