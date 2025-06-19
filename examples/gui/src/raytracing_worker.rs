@@ -3,7 +3,8 @@ use std::sync::Arc;
 use iced::futures::channel::mpsc;
 use iced::futures::sink::SinkExt;
 use iced::futures::stream::{Stream, StreamExt};
-use iced::stream;
+use iced::futures::FutureExt;
+use iced::{futures, stream};
 use raytracing_lib::RenderPass;
 
 pub fn raytracer_worker() -> impl Stream<Item = Event> {
@@ -14,7 +15,7 @@ pub fn raytracer_worker() -> impl Stream<Item = Event> {
         let mut state = WorkerState::Idle;
         // let the driving code know that we are ready to accept render requests, passing it the tx end of the channel
         // created above so that it can send WorkerMessage back to this function.
-        let _ = output.send(Event::ReadyToStart(sender)).await;
+        let _ = output.send(Event::WorkerInitialized(sender)).await;
 
         // then we loop and take action depending on the worker state machine
         loop {
@@ -33,7 +34,6 @@ pub fn raytracer_worker() -> impl Stream<Item = Event> {
                     // create a renderer
                     let mut renderer =
                         raytracing_lib::Renderer::new(rr.world.clone(), Arc::clone(&rr.camera))
-                            .with_cli_progress_tracker()
                             .width(rr.image_width)
                             .height(rr.image_height)
                             .bounces(rr.bounces)
@@ -57,10 +57,27 @@ pub fn raytracer_worker() -> impl Stream<Item = Event> {
                         }
                     });
 
-                    // while we are getting render passes messages, loop and propagate events to the UI update logic
-                    while let Some(rp) = rx.recv().await {
-                        let _ = output.send(Event::RenderPassAvailable(rp)).await;
+                    let _ = output.send(Event::RenderStarted(rr.samples)).await;
+
+                    loop {
+                        futures::select! {
+                            rp = rx.recv().fuse() => {
+                                // while we are getting render passes messages, loop and propagate events to the UI update logic
+                                if let Some(rp) = rp {
+                                    let _ = output.send(Event::RenderPassAvailable(rp)).await;
+                                }
+                            }
+
+                            msg = receiver.select_next_some() => {
+                                if let WorkerMessage::StopRender = msg {
+                                    drop(rx);
+                                    break;
+                                }
+                            }
+
+                        }
                     }
+                    state = WorkerState::Idle;
                 }
             }
         }
@@ -83,16 +100,14 @@ pub struct RenderRequest {
     pub samples: usize,
 }
 
-#[allow(dead_code)]
 pub enum WorkerMessage {
     StartRenderRequest(RenderRequest),
-    Other,
+    StopRender,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum Event {
-    ReadyToStart(mpsc::Sender<WorkerMessage>),
-    RenderStarted(mpsc::Sender<WorkerMessage>),
+    WorkerInitialized(mpsc::Sender<WorkerMessage>),
+    RenderStarted(usize),
     RenderPassAvailable(raytracing_lib::RenderPass),
 }
