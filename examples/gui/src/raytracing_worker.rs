@@ -49,7 +49,11 @@ pub fn raytracer_worker() -> impl Stream<Item = Event> {
                     let (tx, mut rx) = tokio::sync::mpsc::channel::<RenderPass>(2);
                     tokio::task::spawn_blocking(move || {
                         while let Ok(rp) = render_pass_rx.recv() {
-                            tx.blocking_send(rp).unwrap();
+                            if tx.blocking_send(rp).is_err() {
+                                // the receiving end was dropped by closing the window and killing the subscription
+                                // we can stop this task as well
+                                return;
+                            };
                         }
                     });
 

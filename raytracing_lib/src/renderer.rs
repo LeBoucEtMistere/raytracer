@@ -4,6 +4,7 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra_glm::Vec3;
 use rand::prelude::*;
+use std::sync::RwLock;
 use std::{path::Path, sync::Arc, thread, thread::JoinHandle, time::Duration};
 use threadpool::ThreadPool;
 
@@ -84,6 +85,9 @@ impl Renderer {
         let total_passes = self.samples;
         let mut render_pass_tx = self.render_pass_tx;
 
+        let should_stop = Arc::new(RwLock::new(false));
+        let should_stop_clone = Arc::clone(&should_stop);
+
         let render_pass_aggregator = thread::spawn(move || {
             let mut render_pass: usize = 1;
             while let Ok(new_cv) = data_rx.recv() {
@@ -92,13 +96,18 @@ impl Renderer {
                     let mut output = cv.clone();
                     output.normalize();
                     output.gamma_correction();
-                    render_pass_tx
+                    if render_pass_tx
                         .send(RenderPass {
                             canvas: output,
                             current_pass: render_pass,
                             total_passes,
                         })
-                        .unwrap();
+                        .is_err()
+                    {
+                        // the receiving end of the render_pass_tx was shut, we can stop aggregating renders and return last one
+                        *(should_stop.write().unwrap()) = true;
+                        break;
+                    }
                     render_pass += 1;
                 }
             }
@@ -118,14 +127,18 @@ impl Renderer {
             let hittables_arc = self.world.get_hittables();
             let tx_clone = progress_tracker.as_mut().map(|x| x.0.clone());
             let data_tx_clone = data_tx.clone();
+            let should_stop_arc = Arc::clone(&should_stop_clone);
 
             tp.execute(move || {
+                if *should_stop_arc.read().unwrap() {
+                    return;
+                }
                 let result =
                     Renderer::compute_render(height, width, camera_arc, hittables_arc, bounces);
                 if let Some(tx) = tx_clone {
                     tx.send(()).unwrap();
                 }
-                data_tx_clone.send(result).unwrap();
+                let _ = data_tx_clone.send(result);
             })
         }
 
