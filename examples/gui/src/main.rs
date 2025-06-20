@@ -1,5 +1,7 @@
 mod raytracing_worker;
+mod render_controls;
 mod render_progress;
+mod ui_message;
 
 use std::error::Error;
 use std::fs;
@@ -18,33 +20,23 @@ use raytracing_lib::export::MemWriter;
 use raytracing_lib::{Camera, FocusData, MaterialAtlas, World};
 
 use crate::raytracing_worker::{RenderRequest, WorkerMessage};
+use crate::render_controls::RenderControls;
 use crate::render_progress::{ProgressData, RenderProgress};
-
-#[derive(Debug, Clone)]
-enum Message {
-    WorkerEvent(raytracing_worker::Event),
-    CloseWindowEvent,
-    WindowOpened,
-    StartRender,
-    StopRender,
-}
+use crate::ui_message::Message;
 
 struct Daemon {
-    x_size: u32,
-    y_size: u32,
     buf: BytesMut,
     raytracing_worker_tx: Option<Sender<WorkerMessage>>,
     render_progress: RenderProgress,
+    render_controls: RenderControls,
 }
 
 impl Daemon {
-    fn new(x_size: u32, y_size: u32) -> (Self, Task<Message>) {
+    fn new() -> (Self, Task<Message>) {
         let (_id, open) = window::open(window::Settings::default());
 
         (
             Self {
-                x_size,
-                y_size,
                 buf: BytesMut::from(
                     Vec::from_iter(
                         [0u8, 0u8, 0u8, 255u8]
@@ -56,6 +48,7 @@ impl Daemon {
                 ),
                 raytracing_worker_tx: None,
                 render_progress: Default::default(),
+                render_controls: Default::default(),
             },
             open.map(|_| Message::WindowOpened),
         )
@@ -75,13 +68,14 @@ impl Daemon {
         column![
             center(
                 image(Handle::from_rgba(
-                    self.x_size,
-                    self.y_size,
+                    self.render_controls.img_width,
+                    self.render_controls.img_height,
                     BytesMut::clone(&self.buf).freeze(),
                 ))
                 .width(Fill)
                 .height(Fill),
             ),
+            self.render_controls.view(),
             row![self.render_progress.view(), btn]
                 .padding(10)
                 .spacing(5)
@@ -150,10 +144,10 @@ impl Daemon {
                         camera,
                         world,
                         material_atlas,
-                        image_width: self.x_size as usize,
-                        image_height: self.y_size as usize,
-                        bounces: 10,
-                        samples: 128,
+                        image_width: self.render_controls.img_width as usize,
+                        image_height: self.render_controls.img_height as usize,
+                        bounces: self.render_controls.bounces,
+                        samples: self.render_controls.passes,
                     }))
                     .unwrap();
                 }
@@ -167,6 +161,12 @@ impl Daemon {
                     tx.try_send(WorkerMessage::StopRender).unwrap();
                 }
                 self.render_progress = RenderProgress::Aborted;
+            }
+            Message::RenderBouncesChanged(_)
+            | Message::RenderPassesChanged(_)
+            | Message::RenderWidthChanged(_)
+            | Message::RenderHeightChanged(_) => {
+                self.render_controls.update(message);
             }
         }
     }
@@ -182,5 +182,5 @@ impl Daemon {
 pub fn main() -> Result<(), impl Error> {
     iced::daemon(Daemon::title, Daemon::update, Daemon::view)
         .subscription(Daemon::subscriptions)
-        .run_with(|| Daemon::new(500, 500))
+        .run_with(Daemon::new)
 }

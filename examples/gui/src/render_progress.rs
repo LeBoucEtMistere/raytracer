@@ -6,7 +6,7 @@ use iced::{
 };
 use pretty_duration::pretty_duration;
 
-use crate::Message;
+use crate::ui_message::Message;
 
 pub struct ProgressData {
     pub current_pass: usize,
